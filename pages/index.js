@@ -6,6 +6,11 @@ export default function Home() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  
+  // Comparison feature
+  const [code1, setCode1] = useState('');
+  const [code2, setCode2] = useState('');
+  const [compareResult, setCompareResult] = useState(null);
 
   const decodieren = async () => {
     setError('');
@@ -40,8 +45,48 @@ export default function Home() {
     }
   };
 
+  const vergleichen = async () => {
+    setCompareResult(null);
+    
+    if (!code1.trim() || !code2.trim()) {
+      setCompareResult({ error: 'Bitte beide Codes eingeben.' });
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/compare', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          code1: code1.trim().toUpperCase(), 
+          code2: code2.trim().toUpperCase() 
+        })
+      });
+
+      const data = await response.json();
+      setCompareResult(data);
+    } catch (err) {
+      setCompareResult({ error: 'Fehler beim Vergleich: ' + err.message });
+    }
+  };
+
   const beispiel = () => {
     setCode('DSX2ZS09010L9005BN01000VMESB0');
+  };
+
+  const beispielASK = () => {
+    setCode('ASK-21-2-N-01000-VM-SV-DK2-GD1-I0-KHS-KVS-S1-SDS-E0');
+  };
+
+  const beispielEW = () => {
+    setCode('EW-21-2-S0-ELOX-B9005-090-000-000');
+  };
+
+  const beispielVergleich = () => {
+    setCode1('DSX-2-Z-S0-9010-L9005-B-N-01000-VM-ES-B0');
+    setCode2('DSX2ZS09010L9005BN01000VMESB0');
   };
 
   const loeschen = () => {
@@ -51,16 +96,23 @@ export default function Home() {
     setSuccess('');
   };
 
+  const loeschenVergleich = () => {
+    setCode1('');
+    setCode2('');
+    setCompareResult(null);
+  };
+
   return (
     <>
       <Head>
-        <title>DSX Bestellschlüssel Decoder</title>
-        <meta name="description" content="DSX Bestellschlüssel Decoder Tool" />
+        <title>SCHAKO Bestellschlüssel Decoder</title>
+        <meta name="description" content="SCHAKO Bestellschlüssel Decoder für DSX, ASK und EW Produkte" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
       <div className="container">
-        <h1>🛠️ DSX Bestellschlüssel Decoder</h1>
+        <h1>🛠️ SCHAKO Bestellschlüssel Decoder</h1>
+        <p className="subtitle">Unterstützt: DSX (Schlitzdurchlass), ASK (Anschlusskasten), EW (Eckwinkel)</p>
 
         <div className="input-section">
           <div className="form-group">
@@ -69,12 +121,14 @@ export default function Home() {
               id="bestellCode"
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              placeholder="z.B.: DSX-2-Z-S0-9010-L9005-V-N-01000-VM-ES-B0 oder DSX2ZS09010L9005VN01000VMESB0"
+              placeholder="z.B.: DSX-2-Z-S0-9010-L9005-B-N-01000-VM-ES-B0 oder ASK-21-2-N-01000-VM-SV-DK2-GD1-I0-KHS-KVS-S1-SDS-E0"
             />
           </div>
           <div className="button-group">
             <button className="btn-primary" onClick={decodieren}>Dekodieren</button>
-            <button className="btn-secondary" onClick={beispiel}>Beispiel laden</button>
+            <button className="btn-secondary" onClick={beispiel}>DSX Beispiel</button>
+            <button className="btn-secondary" onClick={beispielASK}>ASK Beispiel</button>
+            <button className="btn-secondary" onClick={beispielEW}>EW Beispiel</button>
             <button className="btn-secondary" onClick={loeschen}>Löschen</button>
           </div>
         </div>
@@ -87,6 +141,7 @@ export default function Home() {
             {result && (
               <>
                 <div className="info-box">
+                  <strong>Produkttyp:</strong> {result.productType}<br />
                   <strong>Vollständiger Code (formatiert):</strong><br />
                   <div className="full-code">{result.formatted_code}</div>
                 </div>
@@ -100,6 +155,74 @@ export default function Home() {
                     </div>
                   ))}
                 </div>
+              </>
+            )}
+          </div>
+        )}
+
+        <div className="input-section" style={{ marginTop: '40px' }}>
+          <h2 style={{ marginBottom: '20px', fontSize: '22px', color: 'var(--primary)' }}>🔍 Code-Vergleich</h2>
+          <p style={{ marginBottom: '16px', color: 'var(--text-secondary)' }}>Prüfen Sie, ob zwei Codes identisch sind (nützlich um Codes mit und ohne Bindestriche zu vergleichen).</p>
+          
+          <div className="form-group">
+            <label htmlFor="code1">Code 1 (z.B. mit Bindestrichen):</label>
+            <textarea
+              id="code1"
+              value={code1}
+              onChange={(e) => setCode1(e.target.value)}
+              placeholder="DSX-2-Z-S0-9010-L9005-B-N-01000-VM-ES-B0"
+              style={{ minHeight: '60px' }}
+            />
+          </div>
+          
+          <div className="form-group">
+            <label htmlFor="code2">Code 2 (z.B. ohne Bindestriche):</label>
+            <textarea
+              id="code2"
+              value={code2}
+              onChange={(e) => setCode2(e.target.value)}
+              placeholder="DSX2ZS09010L9005BN01000VMESB0"
+              style={{ minHeight: '60px' }}
+            />
+          </div>
+          
+          <div className="button-group">
+            <button className="btn-primary" onClick={vergleichen}>Vergleichen</button>
+            <button className="btn-secondary" onClick={beispielVergleich}>Beispiel laden</button>
+            <button className="btn-secondary" onClick={loeschenVergleich}>Löschen</button>
+          </div>
+        </div>
+
+        {compareResult && (
+          <div className="results-section">
+            {compareResult.error && <div className="error">{compareResult.error}</div>}
+            
+            {!compareResult.error && (
+              <>
+                {compareResult.identical ? (
+                  <div className="success-message">
+                    <strong>✅ Die Codes sind identisch!</strong><br />
+                    <span style={{ fontSize: '14px', marginTop: '8px', display: 'block' }}>Beide Codes repräsentieren: {compareResult.formatted_code}</span>
+                  </div>
+                ) : (
+                  <div className="error">
+                    <strong>❌ Die Codes sind unterschiedlich!</strong><br />
+                    <div style={{ marginTop: '12px', fontSize: '14px' }}>
+                      <strong>Code 1:</strong> {compareResult.formatted_code1 || 'Ungültig'}<br />
+                      <strong>Code 2:</strong> {compareResult.formatted_code2 || 'Ungültig'}
+                    </div>
+                    {compareResult.differences && compareResult.differences.length > 0 && (
+                      <div style={{ marginTop: '12px' }}>
+                        <strong>Unterschiede:</strong>
+                        <ul style={{ marginTop: '8px', paddingLeft: '20px' }}>
+                          {compareResult.differences.map((diff, idx) => (
+                            <li key={idx}>{diff}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -139,8 +262,14 @@ export default function Home() {
 
         h1 {
           color: var(--primary);
-          margin-bottom: 30px;
+          margin-bottom: 10px;
           font-size: 28px;
+        }
+
+        .subtitle {
+          color: var(--text-secondary);
+          margin-bottom: 30px;
+          font-size: 14px;
         }
 
         .input-section {
